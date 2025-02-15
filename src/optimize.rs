@@ -9,6 +9,7 @@ pub trait OptimizableImage {
     fn height(&self) -> u32;
     fn into_data(self) -> Vec<u8>;
     fn into_png(self) -> Vec<u8>;
+    fn data(&self) -> &[u8];
 }
 
 pub trait Optimizer: Sync {
@@ -125,6 +126,10 @@ impl<'a> OptimizableImage for fast_image_resize::images::Image<'a> {
             .ok();
         out
     }
+
+    fn data(&self) -> &[u8] {
+        self.buffer()
+    }
 }
 
 impl OptimizableImage for tiny_skia::Pixmap {
@@ -157,6 +162,10 @@ impl OptimizableImage for tiny_skia::Pixmap {
             .write_image(&data, width, height, image::ExtendedColorType::Rgba8)
             .ok();
         out
+    }
+
+    fn data(&self) -> &[u8] {
+        self.data()
     }
 }
 

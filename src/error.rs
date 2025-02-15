@@ -14,4 +14,6 @@ pub enum Error {
     Usvg(#[from] usvg::Error),
     #[error("Zopfli: {0}")]
     Zopfli(i32),
+    #[error("Webp: {0:?}")]
+    Webp(::webp::WebPEncodingError),
 }

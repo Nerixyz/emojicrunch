@@ -1,22 +1,23 @@
-use crate::optimize::{Optimizer, Oxipng, Zopflipng};
+use std::path::PathBuf;
 
-pub struct Options {
+use crate::{EmojiImage, directories::Directories, optimize::Optimizer};
+
+pub struct Options<'a> {
     pub resize: fast_image_resize::ResizeOptions,
     pub oxipng: oxipng::Options,
     pub zopfli: zopflipng::Options<'static>,
-    pub optimizer: Box<dyn Optimizer>,
+    pub optimizer: &'a dyn Optimizer,
+    pub webp: libwebp_sys::WebPConfig,
+    directories: Directories,
 }
 
-impl Default for Options {
-    fn default() -> Self {
+impl<'a> Options<'a> {
+    pub fn new(directories: Directories, optimizer: &'a dyn Optimizer) -> Self {
         let resize = fast_image_resize::ResizeOptions::new().resize_alg(
             fast_image_resize::ResizeAlg::Convolution(fast_image_resize::FilterType::Lanczos3),
         );
 
         let oxipng = oxipng::Options::max_compression();
-        // oxipng.deflate = oxipng::Deflaters::Zopfli {
-        //     iterations: 5.try_into().unwrap(),
-        // };
 
         let mut zopfli = zopflipng::Options::new();
         zopfli
@@ -30,17 +31,28 @@ impl Default for Options {
                 zopflipng::STRATEGY_ENTROPY,
             ]);
 
+        let mut webp = libwebp_sys::WebPConfig::new_with_preset(
+            libwebp_sys::WebPPreset::WEBP_PRESET_ICON,
+            100.0,
+        )
+        .unwrap();
+        webp.lossless = 1;
+        webp.quality = 100.0;
+        webp.method = 6;
+        webp.image_hint = libwebp_sys::WebPImageHint::WEBP_HINT_GRAPH;
+        webp.use_sharp_yuv = 1;
+
         Self {
             resize,
             oxipng,
             zopfli,
-            optimizer: Box::new(Oxipng),
+            optimizer,
+            webp,
+            directories,
         }
     }
-}
 
-impl Options {
-    pub fn use_zopfli(&mut self) {
-        self.optimizer = Box::new(Zopflipng)
+    pub fn emoji_dir(&self, size: u32, emoji: &EmojiImage) -> PathBuf {
+        self.directories.for_emoji(size, emoji)
     }
 }

@@ -1,17 +1,10 @@
 use usvg::Transform;
 
-use crate::directories::Directories;
 use crate::{EmojiImage, Options};
 use crate::{Error, resize::resize};
 
 pub trait Provider: Sync {
-    fn transform(
-        &self,
-        dirs: &Directories,
-        options: &Options,
-        emoji: &EmojiImage,
-        sizes: &[u32],
-    ) -> Result<(), Error>;
+    fn transform(&self, options: &Options, emoji: &EmojiImage, sizes: &[u32]) -> Result<(), Error>;
 }
 
 pub trait ImageProvider: Sync {
@@ -19,7 +12,6 @@ pub trait ImageProvider: Sync {
 
     fn transform_image(
         &self,
-        dirs: &Directories,
         options: &Options,
         emoji: &EmojiImage,
         sizes: &[u32],
@@ -29,7 +21,7 @@ pub trait ImageProvider: Sync {
             let resized = resize(&options.resize, &base_image, size)?;
             options
                 .optimizer
-                .optimize_fir(options, resized, &dirs.for_emoji(size, emoji))?;
+                .optimize_fir(options, resized, &options.emoji_dir(size, emoji))?;
         }
         Ok(())
     }
@@ -40,7 +32,6 @@ pub trait SvgProvider: Sync {
 
     fn transform_svg(
         &self,
-        dirs: &Directories,
         options: &Options,
         emoji: &EmojiImage,
         sizes: &[u32],
@@ -54,7 +45,7 @@ pub trait SvgProvider: Sync {
             resvg::render(&svg, transform, &mut pixmap.as_mut());
             options
                 .optimizer
-                .optimize_skia(options, pixmap, &dirs.for_emoji(size, emoji))?;
+                .optimize_skia(options, pixmap, &options.emoji_dir(size, emoji))?;
         }
         Ok(())
     }

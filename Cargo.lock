@@ -333,6 +333,7 @@ dependencies = [
  "fs-err",
  "image",
  "indicatif",
+ "libwebp-sys",
  "oxipng",
  "rayon",
  "resvg",
@@ -343,6 +344,7 @@ dependencies = [
  "tiny-skia",
  "ttf-parser",
  "usvg",
+ "webp",
  "zopflipng",
 ]
 
@@ -563,6 +565,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8355be11b20d696c8f18f6cc018c4e372165b1fa8126cef092399c9951984ffa"
 
 [[package]]
+name = "libwebp-sys"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da0861afa659bb092b2fbeb87a618b227daf7c3b9507274b05443c87a3e38790"
+dependencies = [
+ "cc",
+ "glob",
+ "pkg-config",
+]
+
+[[package]]
 name = "litrs"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -653,6 +666,12 @@ name = "pico-args"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5be167a7af36ee22fe3115051bc51f6e6c7054c9348e28deb4f49bd6f705a315"
+
+[[package]]
+name = "pkg-config"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 
 [[package]]
 name = "png"
@@ -1126,6 +1145,15 @@ checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "webp"
+version = "0.3.0"
+source = "git+https://github.com/Nerixyz/webp-rs?branch=deps%2Fupdate-libwebp#8c6640cfa639d40f0b07d818f3b4920d5d4beed5"
+dependencies = [
+ "image",
+ "libwebp-sys",
 ]
 
 [[package]]

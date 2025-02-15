@@ -54,11 +54,10 @@ impl SvgProvider for Notoemoji<'_> {
 impl Provider for Notoemoji<'_> {
     fn transform(
         &self,
-        dirs: &crate::directories::Directories,
         options: &crate::Options,
         emoji: &EmojiImage,
         sizes: &[u32],
     ) -> Result<(), crate::Error> {
-        self.transform_svg(dirs, options, emoji, sizes)
+        self.transform_svg(options, emoji, sizes)
     }
 }

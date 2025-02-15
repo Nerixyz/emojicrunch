@@ -36,11 +36,10 @@ impl ImageProvider for EmojiDataPngs<'_> {
 impl Provider for EmojiDataPngs<'_> {
     fn transform(
         &self,
-        dirs: &crate::directories::Directories,
         options: &crate::Options,
         emoji: &EmojiImage,
         sizes: &[u32],
     ) -> Result<(), crate::Error> {
-        self.transform_image(dirs, options, emoji, sizes)
+        self.transform_image(options, emoji, sizes)
     }
 }

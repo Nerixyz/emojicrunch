@@ -39,12 +39,11 @@ impl SvgProvider for Twemoji<'_> {
 impl Provider for Twemoji<'_> {
     fn transform(
         &self,
-        dirs: &crate::directories::Directories,
         options: &crate::Options,
         emoji: &EmojiImage,
         sizes: &[u32],
     ) -> Result<(), crate::Error> {
-        self.transform_svg(dirs, options, emoji, sizes)
+        self.transform_svg(options, emoji, sizes)
     }
 }
 

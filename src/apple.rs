@@ -67,12 +67,11 @@ impl ImageProvider for AppleFont<'_> {
 impl Provider for AppleFont<'_> {
     fn transform(
         &self,
-        dirs: &crate::directories::Directories,
         options: &crate::Options,
         emoji: &EmojiImage,
         sizes: &[u32],
     ) -> Result<(), Error> {
-        self.transform_image(dirs, options, emoji, sizes)
+        self.transform_image(options, emoji, sizes)
     }
 }
 

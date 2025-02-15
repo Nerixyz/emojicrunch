@@ -1,0 +1,111 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Build
+        run: cargo b -r
+      - name: Build Emojis (webp)
+        run: cargo r -r -- --webp
+      - name: Build Emojis (png)
+        run: cargo r -r
+      - name: Zip Directory
+        run: zip -r build.zip build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build.zip
+          path: build.zip
+
+  create-release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && (contains(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'))
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # tags
+
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: artifacts
+
+      - run: ls -la artifacts
+
+      - name: Check Release
+        id: is-rel
+        run: |
+          set +e;
+          git describe --exact-match --match 'v*' &> /dev/null;
+          is_tagged=$?
+          echo "IS_TAGGED=$is_tagged" >> "$GITHUB_OUTPUT";
+          if [[ "$is_tagged" == "0" ]]; then
+            echo "TAG=$(git describe --exact-match --match 'v*')" >> "$GITHUB_OUTPUT";
+          fi
+        shell: bash
+
+      - name: Hash Files
+        run: |
+          echo "<details><summary>Hashes</summary>" >> body.txt
+          echo "" >> body.txt
+          echo "| File | Hash |" >> body.txt
+          echo "|---|---|" >> body.txt
+          for file in $(find artifacts); 
+          do 
+            if [ ! -d "$file" ]; then
+              echo "| $(basename -- "$file") | $(sha256sum "$file" | cut -d " " -f 1) |" >> body.txt;
+            fi;
+          done
+          echo "</details>" >> body.txt
+        shell: bash
+
+      - name: Regular release
+        uses: ncipollo/release-action@v1
+        if: steps.is-rel.outputs.IS_TAGGED == '0'
+        with:
+          artifacts: "artifacts/**/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generateReleaseNotes: false
+          allowUpdates: true
+          draft: true
+          bodyFile: body.txt
+          prerelease: false
+          name: ${{ steps.is-rel.outputs.TAG }}
+          tag: ${{ steps.is-rel.outputs.TAG }}
+
+      - name: Nightly release
+        uses: ncipollo/release-action@v1
+        if: steps.is-rel.outputs.IS_TAGGED != '0'
+        with:
+          artifacts: "artifacts/**/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generateReleaseNotes: false
+          replacesArtifacts: true
+          allowUpdates: true
+          bodyFile: body.txt
+          prerelease: true
+          name: Nightly Release
+          tag: nightly-build
+
+      - name: Update nightly-build tag
+        if: steps.is-rel.outputs.IS_TAGGED != '0'
+        run: |
+          git tag -f nightly-build
+          git push -f origin nightly-build

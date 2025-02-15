@@ -6,6 +6,7 @@ use directories::Directories;
 use emojidatapngs::EmojiDataPngs;
 use indicatif::{ParallelProgressIterator, ProgressStyle};
 use notoemoji::Notoemoji;
+use optimize::{Optimizer, Oxipng, Zopflipng};
 use provider::Provider;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -19,10 +20,12 @@ mod options;
 mod provider;
 mod resize;
 mod twemoji;
+mod webp;
 
 pub use error::Error;
 pub use options::Options;
 use twemoji::Twemoji;
+use webp::Webp;
 
 #[derive(serde::Deserialize)]
 struct Emoji {
@@ -43,7 +46,7 @@ struct SkinVariation {
     pub unified: String,
 }
 
-struct EmojiImage<'a> {
+pub struct EmojiImage<'a> {
     pub unified: &'a str,
     pub non_qualified: Option<&'a str>,
     pub short_name: &'a str,
@@ -52,14 +55,13 @@ struct EmojiImage<'a> {
 fn transform_for(
     provider: &impl Provider,
     options: &Options,
-    dirs: &Directories,
     emojis: &[EmojiImage],
     sizes: &[u32],
 ) {
     let it = emojis
         .par_iter()
         .progress_with_style(ProgressStyle::with_template("{bar} {pos:>7}/{len:7} {eta}").unwrap())
-        .filter_map(|it| match provider.transform(dirs, options, it, sizes) {
+        .filter_map(|it| match provider.transform(options, it, sizes) {
             Err(e) => Some(format!(
                 ":{}: ({}) failed: {}",
                 it.short_name, it.unified, e
@@ -95,6 +97,10 @@ struct Args {
     /// This is significantly slower but results in smaller PNGs
     #[arg(long, default_value = "false")]
     use_zopfli: bool,
+
+    /// Produce WEBPs
+    #[arg(long, default_value = "false")]
+    webp: bool,
 
     /// The sizes to scale/render to
     ///
@@ -163,28 +169,34 @@ fn main() {
         })
         .collect();
 
-    let mut options = Options::default();
-    if args.use_zopfli {
-        options.use_zopfli();
-    }
+    let optimizer: Box<dyn Optimizer> = if args.webp {
+        Box::new(Webp)
+    } else if args.use_zopfli {
+        Box::new(Zopflipng)
+    } else {
+        Box::new(Oxipng)
+    };
+    let extension = if args.webp { "webp" } else { "png" };
 
     for vendor in args.vendors {
         let name = vendor.to_string();
-        let directories = Directories::for_provider("build", &name);
         println!("Processing {name}...");
+
+        let directories = Directories::for_provider("build", &name, extension);
         directories.create_sizes(&args.sizes).unwrap();
+        let options = Options::new(directories, optimizer.as_ref());
 
         match vendor {
             Vendor::Apple => match args.apple_font {
                 Some(ref font) => {
                     let font = std::fs::read(font).unwrap();
                     let apple = AppleFont::new(&font, 0).unwrap();
-                    transform_for(&apple, &options, &directories, &images, &args.sizes);
+                    transform_for(&apple, &options, &images, &args.sizes);
                 }
                 None => {
                     let root = args.emoji_data_root.join("img-apple-160");
                     let apple = EmojiDataPngs::new(&root);
-                    transform_for(&apple, &options, &directories, &images, &args.sizes);
+                    transform_for(&apple, &options, &images, &args.sizes);
                 }
             },
             Vendor::Twitter => {
@@ -192,17 +204,17 @@ fn main() {
                     .emoji_data_root
                     .join("build/twitter/twemoji/assets/svg");
                 let twemoji = Twemoji::new(&root);
-                transform_for(&twemoji, &options, &directories, &images, &args.sizes);
+                transform_for(&twemoji, &options, &images, &args.sizes);
             }
             Vendor::Google => {
                 let root = args.emoji_data_root.join("build/google/noto-emoji/svg");
                 let noto = Notoemoji::new(&root);
-                transform_for(&noto, &options, &directories, &images, &args.sizes);
+                transform_for(&noto, &options, &images, &args.sizes);
             }
             Vendor::Facebook => {
                 let root = args.emoji_data_root.join("img-facebook-96");
                 let facebook = EmojiDataPngs::new(&root);
-                transform_for(&facebook, &options, &directories, &images, &args.sizes);
+                transform_for(&facebook, &options, &images, &args.sizes);
             }
         }
     }
