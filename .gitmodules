@@ -1,0 +1,7 @@
+[submodule "emoji-data"]
+	path = emoji-data
+	url = https://github.com/Nerixyz/emoji-data.git
+	branch = feat/16-0
+[submodule "zopflipng-sys/zopfli"]
+	path = zopflipng-sys/zopfli
+	url = https://github.com/google/zopfli

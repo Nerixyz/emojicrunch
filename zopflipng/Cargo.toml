@@ -1,0 +1,8 @@
+[package]
+name = "zopflipng"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+libc = "0.2.169"
+zopflipng-sys = { version = "0.1.0", path = "../zopflipng-sys" }

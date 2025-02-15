@@ -1,0 +1,16 @@
+name: macOS SSH
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: output
+          path: output/**/*
