@@ -102,11 +102,11 @@ struct Args {
     #[arg(long, default_value = "false")]
     webp: bool,
 
-    /// The sizes to scale/render to
+    /// The size(s) to scale/render to. Accepts multiple arguments.
     ///
     /// Defaults to [22, 22 * 2, 22 * 4]
     #[arg(long)]
-    sizes: Vec<u32>,
+    size: Vec<u32>,
 
     /// List of vendors to build for
     #[arg(value_enum)]
@@ -135,10 +135,10 @@ impl Display for Vendor {
 fn main() {
     let mut args = Args::parse();
     args.vendors.dedup();
-    args.sizes.dedup();
+    args.size.dedup();
 
-    if args.sizes.is_empty() {
-        args.sizes = vec![22, 22 * 2, 22 * 4];
+    if args.size.is_empty() {
+        args.size = vec![22, 22 * 2, 22 * 4];
     }
     if args.vendors.is_empty() {
         args.vendors = vec![
@@ -183,7 +183,7 @@ fn main() {
         println!("Processing {name}...");
 
         let directories = Directories::for_provider("build", &name, extension);
-        directories.create_sizes(&args.sizes).unwrap();
+        directories.create_sizes(&args.size).unwrap();
         let options = Options::new(directories, optimizer.as_ref());
 
         match vendor {
@@ -191,12 +191,12 @@ fn main() {
                 Some(ref font) => {
                     let font = std::fs::read(font).unwrap();
                     let apple = AppleFont::new(&font, 0).unwrap();
-                    transform_for(&apple, &options, &images, &args.sizes);
+                    transform_for(&apple, &options, &images, &args.size);
                 }
                 None => {
                     let root = args.emoji_data_root.join("img-apple-160");
                     let apple = EmojiDataPngs::new(&root);
-                    transform_for(&apple, &options, &images, &args.sizes);
+                    transform_for(&apple, &options, &images, &args.size);
                 }
             },
             Vendor::Twitter => {
@@ -204,17 +204,17 @@ fn main() {
                     .emoji_data_root
                     .join("build/twitter/twemoji/assets/svg");
                 let twemoji = Twemoji::new(&root);
-                transform_for(&twemoji, &options, &images, &args.sizes);
+                transform_for(&twemoji, &options, &images, &args.size);
             }
             Vendor::Google => {
                 let root = args.emoji_data_root.join("build/google/noto-emoji/svg");
                 let noto = Notoemoji::new(&root);
-                transform_for(&noto, &options, &images, &args.sizes);
+                transform_for(&noto, &options, &images, &args.size);
             }
             Vendor::Facebook => {
                 let root = args.emoji_data_root.join("img-facebook-96");
                 let facebook = EmojiDataPngs::new(&root);
-                transform_for(&facebook, &options, &images, &args.sizes);
+                transform_for(&facebook, &options, &images, &args.size);
             }
         }
     }
